@@ -4,47 +4,62 @@
 #include <string>
 #include <iostream>
 #include <algorithm>
+#include <filesystem>
 #include <string_view>
 
 #include <fmt/core.h>
 #include <fmt/chrono.h>
 
-#define PASSWORD_FILE_NAME "password.txt"
+class PasswordGenerator {
+public:
+    PasswordGenerator(const std::string& alphabet, int length)
+        : _alphabet{alphabet}, _length{length} {
+        std::random_device device;
+        _engine.seed(device());
+        _distribution = std::uniform_int_distribution<>(0, static_cast<int>(_alphabet.length())-1);
+    }
 
-std::string make_password(std::string_view alphabet, int length)
-{
-    std::random_device device;
-    std::mt19937 engine{device()};
-    std::uniform_int_distribution<> distribution{0, static_cast<int>(alphabet.length())-1};
+    std::string operator()() {
+        std::string password;
+        password.reserve(_length);
 
-    std::string password;
-    password.reserve(length);
+        std::generate_n(std::back_inserter(password), _length, [this]() {
+            return _alphabet[_distribution(_engine)];
+        });
 
-    std::generate_n(std::back_inserter(password), length, [&]() {
-        return alphabet[distribution(engine)];
-    });
-    
-    return password;
-}
+        return password;
+    }
+private:
+    int _length;
+    std::string _alphabet;
+    std::mt19937 _engine;
+    std::uniform_int_distribution<> _distribution;
+};
 
-int create_password_file()
-{
-    auto file{std::fopen(PASSWORD_FILE_NAME, "w")};
-    if (!file) return 0; // file open failed
-    fmt::print(file, "{0:<32}|{1:^15}|{2:^10}\n", "Password", "Service", "Date");
-    fmt::print(file, "{0:-^32}+{0:-^15}+{0:-^10}\n", "");
-    std::fclose(file);
-    return 1;
-}
+class PasswordFile {
+public:
+    PasswordFile(const std::string& file_name) {
+        namespace fs = std::filesystem;
+        if (!fs::exists(file_name)) {
+            _file = std::fopen(file_name.c_str(), "w");
+            fmt::print(_file, "{0:<32}|{1:^15}|{2:^10}\n", "Password", "Service", "Date");
+            fmt::print(_file, "{0:-^32}+{0:-^15}+{0:-^10}\n", "");
+        }
+        else {
+            _file = std::fopen(file_name.c_str(), "a");
+        }
+    }
 
-int write_password_to_file(std::string_view password, std::string_view service)
-{
-    auto file{std::fopen(PASSWORD_FILE_NAME, "a")};
-    if (!file) return 0;
-    fmt::print(file, "{0:<32}|{1:^15}|{2:%Y-%m-%d}\n", password, service, fmt::localtime(std::time(nullptr)));
-    std::fclose(file);
-    return 1;
-}
+    ~PasswordFile() {
+        std::fclose(_file);
+    }
+
+    void write(std::string_view password, std::string_view service) {
+        fmt::print(_file, "{:<32}|{:^15}|{:%Y-%m-%d}\n", password, service, fmt::localtime(std::time(nullptr)));
+    }
+private:
+    FILE* _file;
+};
 
 int main()
 {
