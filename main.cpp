@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <string_view>
 
+#include <fmt/core.h>
+
 std::string make_password(std::string_view alphabet, int length)
 {
     std::random_device device;
@@ -23,8 +25,8 @@ std::string make_password(std::string_view alphabet, int length)
 int main()
 {
     while (true) {
-        auto password{make_password("1234567890", 50)};
-        std::cout << password << " " << password.capacity() << "\n";
+        auto password{make_password("1234567890", 4)};
+        std::cout << fmt::format("{}\n", password);
         std::cin.get();
     }
     return 0;
