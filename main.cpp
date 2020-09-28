@@ -10,6 +10,8 @@
 #include <fmt/core.h>
 #include <fmt/chrono.h>
 
+#include <boost/program_options.hpp>
+
 class PasswordGenerator {
 public:
     PasswordGenerator(const std::string& alphabet, int length)
@@ -18,6 +20,11 @@ public:
         _engine.seed(device());
         _distribution = std::uniform_int_distribution<>(0, static_cast<int>(_alphabet.length())-1);
     }
+
+    PasswordGenerator()
+        : PasswordGenerator(
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890", 13
+        ) { }
 
     std::string operator()() {
         std::string password;
@@ -61,8 +68,51 @@ private:
     FILE* _file;
 };
 
-int main()
+int main(int argc, char** argv)
 {
+    namespace opt = boost::program_options;
+    std::string mode;
+
+    opt::options_description general_desc("Password generator");
+    general_desc.add_options()
+        ("help,h", "Show help message")
+        ("mode", opt::value<std::string>(&mode), "Select mode: auto/manual");
     
+    opt::options_description auto_mode_desc("Auto mode options");
+    auto_mode_desc.add_options()
+        ("service,s", opt::value<std::string>()->default_value("undef"), "Service name");
+    
+    opt::options_description manual_mode_desc("Manual mode options");
+    manual_mode_desc.add_options()
+        ("service,s", opt::value<std::string>()->default_value("undef"), "Service name")
+        ("len", opt::value<int>(), "Password length")
+        ("numbers,n", "Allow numbers in alphabet")
+        ("lower,l", "Allow lower symbols")
+        ("alpha,a", "Allow alpha symbols")
+        ("extra,e", "Allow special symbols");
+
+    opt::variables_map vm;
+
+    auto parsed = opt::command_line_parser(argc, argv)
+        .options(general_desc).allow_unregistered().run();
+    opt::store(parsed, vm);
+    opt::notify(vm);
+
+    try {
+        if (mode == "auto") {
+
+        }
+        else if (mode == "manual") {
+
+        }
+        else {
+            general_desc.add(auto_mode_desc).add(manual_mode_desc);
+            fmt::print("{}\n", general_desc);
+        }
+    }
+    catch (...) {
+        fmt::print("{}\n", general_desc);
+    }
+
     return 0;
 }
