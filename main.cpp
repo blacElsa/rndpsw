@@ -9,6 +9,7 @@
 
 #include <fmt/core.h>
 #include <fmt/chrono.h>
+#include <fmt/ostream.h>
 
 #include <boost/program_options.hpp>
 
