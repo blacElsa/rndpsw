@@ -100,11 +100,36 @@ int main(int argc, char** argv)
     opt::notify(vm);
 
     try {
+        /* mb better */
+        PasswordFile file("passwords.txt");
         if (mode == "auto") {
+            general_desc.add(auto_mode_desc);
+            opt::store(opt::parse_command_line(argc, argv, general_desc), vm);
 
+            PasswordGenerator generator;
+
+            const auto psw = generator();
+            fmt::print("{}\n", psw);
+            file.write(psw, vm["service"].as<std::string>());
         }
         else if (mode == "manual") {
+            general_desc.add(manual_mode_desc);
+            opt::store(opt::parse_command_line(argc, argv, general_desc), vm);
 
+            int length = vm["len"].as<int>();
+            std::string alphabet;
+            if (vm.count("numbers")) alphabet += "1234567890";
+            if (vm.count("lower")) alphabet += "qwertyuiopasdfghjklzxcvbnm";
+            if (vm.count("alpha")) alphabet += "QWERTYUIOPASDFGHJKLZXCVBNM";
+            if (vm.count("extra")) alphabet += "!@#$%^&*?_+=-";
+
+            if (alphabet.empty()) throw std::exception();
+
+            PasswordGenerator generator(alphabet, length);
+
+            const auto psw = generator();
+            fmt::print("{}\n", psw);
+            file.write(psw, vm["service"].as<std::string>());
         }
         else {
             general_desc.add(auto_mode_desc).add(manual_mode_desc);
